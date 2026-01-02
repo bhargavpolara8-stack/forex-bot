@@ -2,7 +2,6 @@ import yfinance as yf
 import pandas as pd
 import requests
 
-# તમારી વિગતો
 TOKEN = "8523307430:AAFFDRMDmIgUIEBTUi2dRwX0JI09irLClP8"
 CHAT_ID = "7768160549"
 SYMBOL = "EURUSD=X"
@@ -12,26 +11,29 @@ def send_alert(message):
     requests.get(url)
 
 def check_market():
-    # 5 દિવસનો ડેટા
-    data = yf.download(tickers=SYMBOL, period='5d', interval='15m', progress=False)
+    # ડેટા મેળવવો
+    df = yf.download(tickers=SYMBOL, period='5d', interval='15m', progress=False)
     
-    if data.empty:
+    if df.empty or len(df) < 50:
+        print("Data not found!")
         return
 
     # EMA ગણતરી
-    data['EMA20'] = data['Close'].ewm(span=20, adjust=False).mean()
-    data['EMA50'] = data['Close'].ewm(span=50, adjust=False).mean()
+    df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
+    df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
     
-    c_20, c_50 = data['EMA20'].iloc[-1], data['EMA50'].iloc[-1]
-    p_20, p_50 = data['EMA20'].iloc[-2], data['EMA50'].iloc[-2]
+    # છેલ્લી બે કેન્ડલ
+    last_20 = df['EMA20'].iloc[-1]
+    last_50 = df['EMA50'].iloc[-1]
+    prev_20 = df['EMA20'].iloc[-2]
+    prev_50 = df['EMA50'].iloc[-2]
 
-    # ક્રોસઓવર લોજિક
-    if p_20 < p_50 and c_20 > c_50:
-        send_alert(f"🚀 BUY: {SYMBOL} (15m) - Green crossed above Red")
-    elif p_20 > p_50 and c_20 < c_50:
-        send_alert(f"📉 SELL: {SYMBOL} (15m) - Green crossed below Red")
+    if prev_20 < prev_50 and last_20 > last_50:
+        send_alert(f"🚀 BUY SIGNAL: {SYMBOL}")
+    elif prev_20 > prev_50 and last_20 < last_50:
+        send_alert(f"📉 SELL SIGNAL: {SYMBOL}")
     else:
-        print("કોઈ ક્રોસઓવર નથી.")
+        print("No Signal.")
 
 if __name__ == "__main__":
     check_market()
