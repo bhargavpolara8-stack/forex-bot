@@ -1,0 +1,25 @@
+name: Forex Alert Bot
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # દર 15 મિનિટે રન થશે
+  workflow_dispatch:        # મેન્યુઅલી ચેક કરવા માટે બટન આપશે
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install Libraries
+        run: |
+          pip install yfinance pandas requests
+
+      - name: Run Bot
+        run: python bot.py
