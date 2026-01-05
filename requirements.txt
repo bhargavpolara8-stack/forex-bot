@@ -1,4 +1,5 @@
 yfinance
-requests
-ta
 pandas
+numpy
+ta
+requests
