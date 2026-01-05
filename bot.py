@@ -1,36 +1,37 @@
-import os
 import yfinance as yf
-import requests
-import time
+import pandas as pd
 from ta.trend import EMAIndicator
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
-
+# Forex symbol, example EURUSD
 symbol = "EURUSD=X"
-interval = "5m"
-period = "2d"
-last_signal = None
 
-def send(msg):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
+# Historical data fetch
+data = yf.download(symbol, period="1y", interval="1d")
 
-while True:
-    data = yf.download(symbol, interval=interval, period=period)
-    close = data['Close']
+# Close price 1D Series select
+close = data['Close']
 
-    ema20 = EMAIndicator(close, 20).ema_indicator()
-    ema50 = EMAIndicator(close, 50).ema_indicator()
+# EMA calculation
+ema20 = EMAIndicator(close, 20).ema_indicator()
+ema50 = EMAIndicator(close, 50).ema_indicator()
 
-    if ema20.iloc[-2] < ema50.iloc[-2] and ema20.iloc[-1] > ema50.iloc[-1]:
-        if last_signal != "BUY":
-            send("📈 BUY SIGNAL\nEMA 20 crossed ABOVE EMA 50")
-            last_signal = "BUY"
+# Add EMA to DataFrame
+data['EMA20'] = ema20
+data['EMA50'] = ema50
 
-    if ema20.iloc[-2] > ema50.iloc[-2] and ema20.iloc[-1] < ema50.iloc[-1]:
-        if last_signal != "SELL":
-            send("📉 SELL SIGNAL\nEMA 20 crossed BELOW EMA 50")
-            last_signal = "SELL"
+# Simple crossover logic
+data['Signal'] = 0
+data.loc[data['EMA20'] > data['EMA50'], 'Signal'] = 1   # Buy
+data.loc[data['EMA20'] < data['EMA50'], 'Signal'] = -1  # Sell
 
-    time.sleep(60)
+# Latest signal
+latest_signal = data['Signal'].iloc[-1]
+if latest_signal == 1:
+    print("BUY Signal ✅")
+elif latest_signal == -1:
+    print("SELL Signal ❌")
+else:
+    print("No clear signal ⏸")
+
+# Optional: print last 5 rows
+print(data.tail())
