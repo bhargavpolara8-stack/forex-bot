@@ -9,8 +9,8 @@ import time
 # -----------------------------
 # Telegram setup
 # -----------------------------
-TELEGRAM_BOT_TOKEN = "AAHjHtoVWGyzf08_0CzoLcJfyD9t_QV10gk"   # Replace with your bot token
-TELEGRAM_CHAT_ID = "7768160549"       # Replace with your chat id
+TELEGRAM_BOT_TOKEN = "AAHjHtoVWGyzf08_0CzoLcJfyD9t_QV10gk"
+TELEGRAM_CHAT_ID = "7768160549"
 
 def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -23,37 +23,32 @@ def send_telegram(msg):
 # -----------------------------
 # Forex pair setup
 # -----------------------------
-TICKER = "EURUSD=X"   # Change to your preferred Forex pair
-INTERVAL = "1h"       # 1-hour data, can use "1d", "15m", etc.
-PERIOD = "60d"        # last 60 days
+TICKER = "EURUSD=X"
+INTERVAL = "1h"
+PERIOD = "60d"
 
 # -----------------------------
 # EMA crossover check
 # -----------------------------
 def check_ema_crossover():
-    # Fetch data
     df = yf.download(TICKER, period=PERIOD, interval=INTERVAL)
     
     if df.empty:
         print("No data received from yfinance.")
         return
     
-    # Fix: take 'Close' column as 1D Series
-    close = df['Close']  
+    # Fix: make Close 1D
+    close = df['Close'].squeeze()
 
-    # Calculate EMA
     ema20 = EMAIndicator(close, 20).ema_indicator()
     ema50 = EMAIndicator(close, 50).ema_indicator()
 
-    # Previous candle EMA
     prev_ema20 = ema20.iloc[-2]
     prev_ema50 = ema50.iloc[-2]
     
-    # Current candle EMA
     curr_ema20 = ema20.iloc[-1]
     curr_ema50 = ema50.iloc[-1]
 
-    # Check crossover
     if prev_ema20 < prev_ema50 and curr_ema20 > curr_ema50:
         send_telegram(f"✅ BUY signal for {TICKER} at {df.index[-1]} | Close={close.iloc[-1]:.5f}")
         print("BUY signal sent")
